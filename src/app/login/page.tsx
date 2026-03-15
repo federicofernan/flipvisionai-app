@@ -18,6 +18,26 @@ function LoginForm() {
   const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError]               = useState<string | null>(null)
 
+  // Forgot password state
+  const [showReset, setShowReset]         = useState(false)
+  const [resetEmail, setResetEmail]       = useState('')
+  const [resetLoading, setResetLoading]   = useState(false)
+  const [resetSent, setResetSent]         = useState(false)
+  const [resetError, setResetError]       = useState<string | null>(null)
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setResetLoading(true)
+    setResetError(null)
+    const supabase = createClient()
+    const { error: err } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+      redirectTo: `${window.location.origin}/auth/reset-password`,
+    })
+    setResetLoading(false)
+    if (err) { setResetError(err.message); return }
+    setResetSent(true)
+  }
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -61,6 +81,71 @@ function LoginForm() {
 
         {/* Card */}
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-8">
+          {showReset ? (
+            /* ── Forgot password panel ── */
+            <>
+              <button
+                type="button"
+                onClick={() => { setShowReset(false); setResetSent(false); setResetError(null) }}
+                className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 mb-5 transition-colors cursor-pointer"
+              >
+                ← Back to sign in
+              </button>
+
+              <h1 className="text-xl font-semibold text-slate-900 mb-1">Reset your password</h1>
+              <p className="text-sm text-slate-500 mb-6">
+                Enter your email and we'll send you a link to reset your password.
+              </p>
+
+              {resetSent ? (
+                <div className="text-center py-4">
+                  <div className="w-12 h-12 rounded-full bg-green-50 border border-green-100 flex items-center justify-center mx-auto mb-3">
+                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <p className="text-sm font-medium text-slate-900 mb-1">Check your email</p>
+                  <p className="text-xs text-slate-500">
+                    We sent a reset link to <span className="font-medium">{resetEmail}</span>.
+                    Check your inbox and follow the instructions.
+                  </p>
+                </div>
+              ) : (
+                <form onSubmit={handleResetPassword} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 mb-1.5">Email</label>
+                    <input
+                      type="email"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      required
+                      autoComplete="email"
+                      className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm
+                        placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  {resetError && (
+                    <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                      {resetError}
+                    </p>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={resetLoading}
+                    className="w-full py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium
+                      shadow-sm shadow-blue-200 hover:bg-blue-700 active:scale-95 transition-all
+                      cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2"
+                  >
+                    {resetLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {resetLoading ? 'Sending…' : 'Send reset link'}
+                  </button>
+                </form>
+              )}
+            </>
+          ) : (
+            /* ── Login panel ── */
+            <>
           <h1 className="text-xl font-semibold text-slate-900 mb-1">Welcome back</h1>
           <p className="text-sm text-slate-500 mb-6">Sign in to your account to continue.</p>
 
@@ -110,7 +195,16 @@ function LoginForm() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1.5">Password</label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-medium text-slate-700">Password</label>
+                <button
+                  type="button"
+                  onClick={() => { setShowReset(true); setResetEmail(email) }}
+                  className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors cursor-pointer"
+                >
+                  Forgot password?
+                </button>
+              </div>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -150,6 +244,8 @@ function LoginForm() {
               {loading ? 'Signing in…' : 'Sign In'}
             </button>
           </form>
+            </>
+          )}
         </div>
 
         <p className="text-center text-sm text-slate-500 mt-5">

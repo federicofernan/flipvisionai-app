@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { User, Mail, CreditCard, Sparkles, ShieldCheck, Bell, ChevronRight } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { User, Mail, MapPin, Globe, CreditCard, Sparkles, ShieldCheck, Bell, ChevronRight, ArrowUpRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { AppShell } from '@/components/AppShell'
 import { PLANS, PLAN_LABELS, type PlanId } from '@/lib/plans'
@@ -23,20 +24,33 @@ function formatMemberSince(iso: string) {
 }
 
 export default function AccountPage() {
+  const router = useRouter()
   const [profile, setProfile] = useState<Profile | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [authEmail, setAuthEmail] = useState<string>('')
+  const [authName, setAuthName]   = useState<string>('')
+  const [loading, setLoading]     = useState(true)
 
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return
+      if (!user) { setLoading(false); return }
+
+      // Store auth-level fallbacks (always available)
+      setAuthEmail(user.email ?? '')
+      const meta = user.user_metadata ?? {}
+      setAuthName(
+        meta.full_name ??
+        [meta.first_name, meta.last_name].filter(Boolean).join(' ') ??
+        ''
+      )
+
       supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single()
         .then(({ data }) => {
-          setProfile(data as Profile)
+          if (data) setProfile(data as Profile)
           setLoading(false)
         })
     })
@@ -45,12 +59,17 @@ export default function AccountPage() {
   const plan        = (profile?.selected_plan ?? 'free') as PlanId
   const planLabel   = PLAN_LABELS[plan]
   const planDetails = PLANS.find((p) => p.id === plan)
-  const initials    = profile
-    ? `${profile.first_name[0] ?? ''}${profile.last_name[0] ?? ''}`.toUpperCase()
-    : '··'
+
   const displayName = profile
     ? `${profile.first_name} ${profile.last_name}`.trim()
-    : '—'
+    : authName || '—'
+  const displayEmail = profile?.email || authEmail || '—'
+  const initials = displayName !== '—'
+    ? displayName.split(' ').map((w) => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase()
+    : '?'
+
+  const canUpgrade = plan === 'free' || plan === 'pro'
+  const upgradePlan = plan === 'free' ? 'Pro' : 'Investor'
 
   return (
     <AppShell>
@@ -119,7 +138,43 @@ export default function AccountPage() {
                   <p className="text-[10px] text-slate-400 mb-0.5">Email</p>
                   {loading
                     ? <div className="h-3 bg-slate-100 rounded-full w-44 animate-pulse" />
-                    : <p className="text-sm font-medium text-slate-800">{profile?.email ?? '—'}</p>
+                    : <p className="text-sm font-medium text-slate-800">{displayEmail}</p>
+                  }
+                </div>
+                <button className="text-xs text-blue-600 hover:text-blue-700 font-medium cursor-pointer transition-colors">
+                  Edit
+                </button>
+              </div>
+
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] text-slate-400 mb-0.5">Address</p>
+                  {loading
+                    ? <div className="h-3 bg-slate-100 rounded-full w-48 animate-pulse" />
+                    : (
+                      <p className="text-sm font-medium text-slate-800">
+                        {[profile?.address_line_1, profile?.address_line_2].filter(Boolean).join(', ') || '—'}
+                      </p>
+                    )
+                  }
+                </div>
+                <button className="text-xs text-blue-600 hover:text-blue-700 font-medium cursor-pointer transition-colors">
+                  Edit
+                </button>
+              </div>
+
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <Globe className="w-4 h-4 text-slate-400 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] text-slate-400 mb-0.5">State / Country</p>
+                  {loading
+                    ? <div className="h-3 bg-slate-100 rounded-full w-32 animate-pulse" />
+                    : (
+                      <p className="text-sm font-medium text-slate-800">
+                        {[profile?.state, profile?.country].filter(Boolean).join(', ') || '—'}
+                      </p>
+                    )
                   }
                 </div>
                 <button className="text-xs text-blue-600 hover:text-blue-700 font-medium cursor-pointer transition-colors">
@@ -186,18 +241,31 @@ export default function AccountPage() {
               </div>
             </div>
 
-            {plan !== 'free' && (
-              <div className="flex gap-2 mt-4">
-                <button className="flex-1 py-2 rounded-xl border border-slate-200 text-sm text-slate-600
-                  hover:bg-slate-50 transition-colors cursor-pointer font-medium">
-                  Manage Billing
+            <div className="flex gap-2 mt-4">
+              {canUpgrade && (
+                <button
+                  onClick={() => router.push('/signup/plan')}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl
+                    bg-blue-600 text-white text-sm font-semibold shadow-sm shadow-blue-200
+                    hover:bg-blue-700 active:scale-95 transition-all cursor-pointer"
+                >
+                  <ArrowUpRight className="w-4 h-4" />
+                  Upgrade to {upgradePlan}
                 </button>
-                <button className="flex-1 py-2 rounded-xl border border-red-100 text-sm text-red-500
-                  hover:bg-red-50 transition-colors cursor-pointer font-medium">
-                  Cancel Plan
-                </button>
-              </div>
-            )}
+              )}
+              {plan !== 'free' && (
+                <>
+                  <button className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-600
+                    hover:bg-slate-50 transition-colors cursor-pointer font-medium">
+                    Manage Billing
+                  </button>
+                  <button className="flex-1 py-2.5 rounded-xl border border-red-100 text-sm text-red-500
+                    hover:bg-red-50 transition-colors cursor-pointer font-medium">
+                    Cancel Plan
+                  </button>
+                </>
+              )}
+            </div>
           </section>
 
           {/* ── Notifications ── */}

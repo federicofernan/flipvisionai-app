@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { UploadCloud, X, ImageIcon } from 'lucide-react'
 import { RoomType, ROOM_TYPE_LABELS, ROOM_TYPES } from '@/lib/types'
 
@@ -19,6 +19,10 @@ export function PhotoUploader({ onChange }: PhotoUploaderProps) {
   const [dragging, setDragging] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  useEffect(() => {
+    onChange(photos)
+  }, [photos, onChange])
+
   const addFiles = useCallback(
     (files: FileList | File[]) => {
       const newPhotos: PendingPhoto[] = Array.from(files)
@@ -28,14 +32,9 @@ export function PhotoUploader({ onChange }: PhotoUploaderProps) {
           previewUrl: URL.createObjectURL(file),
           roomType: 'other' as RoomType,
         }))
-
-      setPhotos((prev) => {
-        const updated = [...prev, ...newPhotos]
-        onChange(updated)
-        return updated
-      })
+      setPhotos((prev) => [...prev, ...newPhotos])
     },
-    [onChange]
+    []
   )
 
   const handleDrop = useCallback(
@@ -48,19 +47,13 @@ export function PhotoUploader({ onChange }: PhotoUploaderProps) {
   )
 
   const handleRoomChange = (index: number, roomType: RoomType) => {
-    setPhotos((prev) => {
-      const updated = prev.map((p, i) => (i === index ? { ...p, roomType } : p))
-      onChange(updated)
-      return updated
-    })
+    setPhotos((prev) => prev.map((p, i) => (i === index ? { ...p, roomType } : p)))
   }
 
   const handleRemove = (index: number) => {
     setPhotos((prev) => {
       URL.revokeObjectURL(prev[index].previewUrl)
-      const updated = prev.filter((_, i) => i !== index)
-      onChange(updated)
-      return updated
+      return prev.filter((_, i) => i !== index)
     })
   }
 
