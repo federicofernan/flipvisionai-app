@@ -43,6 +43,14 @@ export const ROOM_TYPES: RoomType[] = [
   'other',
 ]
 
+// ── Renovation style ─────────────────────────────────────────────────────────
+export interface RenovationStyle {
+  id: string
+  name: string
+  label: string
+  description: string
+}
+
 // ── AI analysis report shape ─────────────────────────────────────────────────
 export interface RenovationItem {
   area: string

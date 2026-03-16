@@ -29,6 +29,7 @@ interface Report {
   analysis: string
   before_photo_url: string | null
   generated_image_url: string | null
+  renovation_style: string | null
   created_at: string
   properties: {
     address: string
@@ -409,6 +410,12 @@ function ReportCard({ report }: { report: Report }) {
                   {ROOM_TYPE_LABELS[room] ?? room}
                 </span>
               ))}
+              {report.renovation_style && (
+                <span className="text-[10px] font-medium text-indigo-700 bg-indigo-50
+                  border border-indigo-100 px-2 py-0.5 rounded-full">
+                  ✦ {report.renovation_style}
+                </span>
+              )}
             </div>
 
             {parsed && !expanded && (
@@ -546,6 +553,9 @@ function ReportCard({ report }: { report: Report }) {
                       : report.properties?.address ?? 'Renovation Report'
                     }
                   </p>
+                  {report.renovation_style && (
+                    <p className="text-[10px] font-medium text-indigo-600 mt-0.5">✦ {report.renovation_style}</p>
+                  )}
                   <p className="text-[10px] text-slate-400 mt-0.5">
                     Generated {formatDate(report.created_at)} · {formatTime(report.created_at)}
                   </p>

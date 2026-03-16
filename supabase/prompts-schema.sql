@@ -43,12 +43,15 @@ FOCUS ON:
 • fixtures
 • layout improvements
 
+DESIGN STYLE
+The owner has selected the following renovation style. All recommendations must align with it:
+{{renovation_style}}
+
 ADDITIONAL REQUIREMENTS
 • Keep recommendations realistic and cost-effective.
 • Focus on renovations that provide the highest return on investment.
 • Assume the property is located in the United States housing market.
 • Avoid luxury renovations unless clearly justified by the image.
-• Use neutral modern design trends that appeal to most buyers.
 • If multiple photos exist for the same room type, combine them into a single analysis for that room.
 
 OUTPUT RULE
@@ -124,19 +127,24 @@ The rooms being analyzed are: {{rooms}}.'
 ) on conflict (name) do nothing;
 
 -- ─────────────────────────────────────────────
+-- If the renovation_analysis row already exists, force-update it:
+-- delete from prompts where name = 'renovation_analysis';
+-- Then re-run the insert above.
+-- ─────────────────────────────────────────────
 -- Seed: image generation prompt
 -- ─────────────────────────────────────────────
 insert into prompts (name, description, content) values (
   'image_generation',
   'Rules passed to Gemini image generation when creating a post-renovation rendering. {{rooms}} and {{top_renovations}} are replaced at runtime.',
-  'Photorealistic interior design rendering of a beautifully renovated modern home interior.
-Style: bright natural lighting, clean neutral palette, high-end finishes, professional real estate photography style.
+  'Photorealistic interior design rendering of a beautifully renovated home interior.
+Design style: {{renovation_style}}
 Rules:
 • Do not include any people in the image.
 • Do not add any text overlays, watermarks, or labels.
-• Focus on realistic, market-ready renovations — avoid ultra-luxury or theatrical finishes unless justified.
+• Focus on realistic, market-ready renovations that match the specified design style.
 • Show the spaces as cohesive and move-in ready.
 • Use a wide-angle perspective that captures the full room.
+• Lighting, materials, and finishes must reflect the chosen style.
 Rooms shown: {{rooms}}.
 Key improvements applied: {{top_renovations}}.'
 ) on conflict (name) do nothing;

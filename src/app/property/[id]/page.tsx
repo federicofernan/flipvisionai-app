@@ -23,7 +23,7 @@ import { PropertyGallery } from '@/components/PropertyGallery'
 import { PhotoUploader, PendingPhoto } from '@/components/PhotoUploader'
 import { RoomSelectionModal } from '@/components/RoomSelectionModal'
 import { fetchProperty, fetchPropertyPhotos } from '@/lib/queries'
-import { Property, PropertyPhoto, RoomType, AnalysisReport } from '@/lib/types'
+import { Property, PropertyPhoto, RoomType, AnalysisReport, RenovationStyle } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
 
 function formatDate(iso: string) {
@@ -333,7 +333,7 @@ export default function PropertyDetailPage() {
   }
 
   // ── AI analysis handler ─────────────────────────────────────────────────
-  const handleAnalyze = async (selectedRooms: RoomType[]) => {
+  const handleAnalyze = async (selectedRooms: RoomType[], style: RenovationStyle) => {
     setShowRoomModal(false)
     setAnalyzing(true)
     setAnalyzeError(null)
@@ -342,7 +342,7 @@ export default function PropertyDetailPage() {
       const res = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ propertyId: id, rooms: selectedRooms }),
+        body: JSON.stringify({ propertyId: id, rooms: selectedRooms, style }),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'Analysis failed')

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI, Part } from '@google/generative-ai'
-import { GoogleGenAI, Modality } from '@google/genai'
+import { GoogleGenAI, Modality, type Content } from '@google/genai'
 import { createClient } from '@/lib/supabase/server'
-import { RoomType, ROOM_TYPE_LABELS, AnalysisReport } from '@/lib/types'
+import { RoomType, ROOM_TYPE_LABELS, AnalysisReport, RenovationStyle } from '@/lib/types'
 
 const genAI    = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
 const googleAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! })
@@ -21,7 +21,7 @@ function parseGeminiJson(text: string): AnalysisReport {
   return JSON.parse(cleaned)
 }
 
-function buildImagePrompt(template: string, report: AnalysisReport): string {
+function buildImagePrompt(template: string, report: AnalysisReport, style: RenovationStyle): string {
   const topRenos = report.top_priorities
     .slice(0, 3)
     .map((p) => p.renovation)
@@ -32,14 +32,18 @@ function buildImagePrompt(template: string, report: AnalysisReport): string {
   return template
     .replace('{{rooms}}', rooms)
     .replace('{{top_renovations}}', topRenos)
+    .replace('{{renovation_style}}', `${style.label}: ${style.description}`)
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { propertyId, rooms } = await req.json()
+    const { propertyId, rooms, style }: { propertyId: string; rooms: RoomType[]; style: RenovationStyle } = await req.json()
 
     if (!propertyId || !rooms?.length) {
       return NextResponse.json({ error: 'Missing propertyId or rooms' }, { status: 400 })
+    }
+    if (!style?.name) {
+      return NextResponse.json({ error: 'Missing renovation style' }, { status: 400 })
     }
 
     const supabase = await createClient()
@@ -79,8 +83,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Prompt configuration not found. Run prompts-schema.sql in Supabase.' }, { status: 500 })
     }
 
-    const roomList = Object.keys(grouped).map((r) => ROOM_TYPE_LABELS[r as RoomType] ?? r).join(', ')
-    const prompt   = promptRow.content.replace('{{rooms}}', roomList)
+    const roomList     = Object.keys(grouped).map((r) => ROOM_TYPE_LABELS[r as RoomType] ?? r).join(', ')
+    const styleValue   = `${style.label}: ${style.description}`
+    const prompt       = promptRow.content
+      .replace('{{rooms}}', roomList)
+      .replace('{{renovation_style}}', styleValue)
 
     // The first photo across all analyzed rooms (ordered by created_at asc from the DB query)
     const beforePhotoUrl = photos[0]?.public_url ?? null
@@ -116,7 +123,7 @@ export async function POST(req: NextRequest) {
     // Persist the text report first so we have the reportId
     const { data: saved, error: insertError } = await supabase
       .from('reports')
-      .insert({ property_id: propertyId, rooms, analysis: JSON.stringify(analysisReport), before_photo_url: beforePhotoUrl })
+      .insert({ property_id: propertyId, rooms, analysis: JSON.stringify(analysisReport), before_photo_url: beforePhotoUrl, renovation_style: style.label })
       .select('id')
       .single()
 
@@ -132,13 +139,13 @@ export async function POST(req: NextRequest) {
         .eq('name', 'image_generation')
         .single()
 
-      const imagePromptTemplate = imagePromptRow?.content ?? 'Photorealistic rendering of a renovated home interior. Rooms: {{rooms}}. Improvements: {{top_renovations}}. No people, no text.'
-      const imagePrompt = buildImagePrompt(imagePromptTemplate, analysisReport)
+      const imagePromptTemplate = imagePromptRow?.content ?? 'Photorealistic rendering of a renovated home interior. Design style: {{renovation_style}}. Rooms: {{rooms}}. Improvements: {{top_renovations}}. No people, no text.'
+      const imagePrompt = buildImagePrompt(imagePromptTemplate, analysisReport, style)
       console.log('[image_generation] prompt:', imagePrompt)
 
       const imageResponse = await googleAI.models.generateContent({
         model: process.env.IMAGEN_MODEL ?? 'gemini-3.1-flash-image-preview',
-        contents: [{ role: 'user', parts: [{ text: imagePrompt }, ...allImageParts] }],
+        contents: [{ role: 'user', parts: [{ text: imagePrompt }, ...allImageParts] }] as Content[],
         config: { responseModalities: [Modality.IMAGE, Modality.TEXT] },
       })
 
