@@ -17,6 +17,8 @@ import {
   AlertCircle,
   TrendingUp,
   Star,
+  AlertTriangle,
+  Crown,
 } from 'lucide-react'
 import { AppShell } from '@/components/AppShell'
 import { PropertyGallery } from '@/components/PropertyGallery'
@@ -488,6 +490,29 @@ export default function PropertyDetailPage() {
           <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
           Back to Properties
         </Link>
+
+        {/* Free plan limit banner */}
+        {!loading && usageLimit !== null && usageCount >= usageLimit && (
+          <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 border border-amber-200 mb-6">
+            <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-amber-800">
+                Free plan limit reached ({usageCount}/{usageLimit} analyses used this month)
+              </p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                Upgrade to Pro for unlimited AI renovation analyses, visualizations, and PDF exports.
+              </p>
+              <a
+                href="/signup/plan"
+                className="inline-flex items-center gap-1.5 mt-2.5 px-3 py-1.5 rounded-lg
+                  bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700 transition-colors"
+              >
+                <Crown className="w-3 h-3" />
+                Upgrade to Pro
+              </a>
+            </div>
+          </div>
+        )}
 
         {loading && (
           <div className="flex flex-col items-center justify-center py-32 gap-3">

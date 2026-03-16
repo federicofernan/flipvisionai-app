@@ -8,7 +8,8 @@ export interface Plan {
   features: string[]
   cta: string
   highlighted: boolean
-  report_limit: number | null   // analyses per month; null = unlimited
+  report_limit: number | null              // renovation analyses per month; null = unlimited
+  property_analysis_limit: number | null   // property URL analyses per month; null = unlimited
   // Future: Stripe price ID for billing integration
   stripePriceId?: string
 }
@@ -29,6 +30,7 @@ export const PLANS: Plan[] = [
     cta: 'Get Started Free',
     highlighted: false,
     report_limit: 2,
+    property_analysis_limit: 2,
   },
   {
     id: 'pro',
@@ -45,6 +47,7 @@ export const PLANS: Plan[] = [
     cta: 'Start Pro',
     highlighted: true,
     report_limit: null,
+    property_analysis_limit: null,
     stripePriceId: 'price_pro_monthly', // TODO: replace with real Stripe price ID
   },
   {
@@ -62,6 +65,7 @@ export const PLANS: Plan[] = [
     cta: 'Start Investor',
     highlighted: false,
     report_limit: null,
+    property_analysis_limit: null,
     stripePriceId: 'price_investor_monthly', // TODO: replace with real Stripe price ID
   },
 ]

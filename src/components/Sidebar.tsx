@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   Sparkles,
   LogOut,
+  SearchCheck,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { PLAN_LABELS, PLAN_BADGE_STYLES, type PlanId } from '@/lib/plans'
@@ -29,10 +30,16 @@ const NAV_ITEMS = [
     label: 'My Properties',
     href:  '/dashboard',
     icon:  LayoutGrid,
-    match: (p: string) => p === '/dashboard' || p.startsWith('/property'),
+    match: (p: string) => p === '/dashboard' || (p.startsWith('/property') && !p.startsWith('/property-analysis')),
   },
   {
-    label: 'My Reports',
+    label: 'Property Analysis',
+    href:  '/property-analysis',
+    icon:  SearchCheck,
+    match: (p: string) => p === '/property-analysis',
+  },
+  {
+    label: 'My Renovation Reports',
     href:  '/reports',
     icon:  FileBarChart2,
     match: (p: string) => p === '/reports',
@@ -215,7 +222,7 @@ export function Sidebar() {
               </span>
             </div>
             <p className="text-[10px] text-slate-500 leading-snug">
-              {plan === 'free'     && 'Upgrade to unlock AI analysis.'}
+              {plan === 'free'     && 'Upgrade to unlock additional features.'}
               {plan === 'pro'      && 'Unlimited properties & AI analysis.'}
               {plan === 'investor' && 'Full access + ROI & portfolio reports.'}
             </p>
