@@ -306,13 +306,16 @@ export default function PropertyDetailPage() {
         setUsageLimit(limit)
 
         if (limit !== null) {
-          const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
-          const { count } = await supabase
-            .from('reports')
-            .select('*, properties!inner(user_id)', { count: 'exact', head: true })
-            .eq('properties.user_id', user.id)
-            .gte('created_at', startOfMonth)
-          setUsageCount(count ?? 0)
+          const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+          const { data: propsData } = await supabase
+            .from('properties')
+            .select('reports(id, created_at)')
+            .eq('user_id', user.id)
+          const total = (propsData ?? []).reduce((sum, p: { reports?: { id: string; created_at: string }[] }) => {
+            const monthly = (p.reports ?? []).filter(r => new Date(r.created_at) >= startOfMonth)
+            return sum + monthly.length
+          }, 0)
+          setUsageCount(total)
         }
       }
     } finally {
