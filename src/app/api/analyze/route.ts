@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI, Part } from '@google/generative-ai'
-import { GoogleGenAI, Modality, type Content } from '@google/genai'
 import { createClient } from '@/lib/supabase/server'
 import { RoomType, ROOM_TYPE_LABELS, AnalysisReport, RenovationStyle } from '@/lib/types'
 import { PLANS, type PlanId } from '@/lib/plans'
 
-const genAI    = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
-const googleAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! })
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
 
 async function urlToInlinePart(url: string): Promise<Part> {
   const res = await fetch(url)
@@ -22,19 +20,6 @@ function parseGeminiJson(text: string): AnalysisReport {
   return JSON.parse(cleaned)
 }
 
-function buildImagePrompt(template: string, report: AnalysisReport, style: RenovationStyle): string {
-  const topRenos = report.top_priorities
-    .slice(0, 3)
-    .map((p) => p.renovation)
-    .join(', ')
-
-  const rooms = report.rooms.map((r) => r.room_label).join(', ')
-
-  return template
-    .replace('{{rooms}}', rooms)
-    .replace('{{top_renovations}}', topRenos)
-    .replace('{{renovation_style}}', `${style.label}: ${style.description}`)
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -135,7 +120,6 @@ export async function POST(req: NextRequest) {
 
     // Build multipart content: prompt text, then per-room label + images
     const parts: Part[] = [{ text: prompt }]
-    const allImageParts: Part[] = []
 
     for (const [roomType, roomPhotos] of Object.entries(grouped)) {
       const label = ROOM_TYPE_LABELS[roomType as RoomType] ?? roomType
@@ -144,7 +128,6 @@ export async function POST(req: NextRequest) {
       })
       const imageParts = await Promise.all(roomPhotos.map((p) => urlToInlinePart(p.public_url)))
       parts.push(...imageParts)
-      allImageParts.push(...imageParts)
     }
 
     const result = await model.generateContent(parts)
@@ -170,59 +153,7 @@ export async function POST(req: NextRequest) {
 
     if (insertError) throw insertError
 
-    // ── Generate a rendered-after image with Gemini image generation ─────────
-    let generatedImageUrl: string | null = null
-    try {
-      // Fetch image generation prompt template from DB
-      const { data: imagePromptRow } = await supabase
-        .from('prompts')
-        .select('content')
-        .eq('name', 'image_generation')
-        .single()
-
-      const imagePromptTemplate = imagePromptRow?.content ?? 'Photorealistic rendering of a renovated home interior. Design style: {{renovation_style}}. Rooms: {{rooms}}. Improvements: {{top_renovations}}. No people, no text.'
-      const imagePrompt = buildImagePrompt(imagePromptTemplate, analysisReport, style)
-      console.log('[image_generation] prompt:', imagePrompt)
-
-      const imageResponse = await googleAI.models.generateContent({
-        model: process.env.IMAGEN_MODEL ?? 'gemini-3.1-flash-image-preview',
-        contents: [{ role: 'user', parts: [{ text: imagePrompt }, ...allImageParts] }] as unknown as Content[],
-        config: { responseModalities: [Modality.IMAGE, Modality.TEXT] },
-      })
-
-      // Find the first image part in the response
-      const parts = imageResponse.candidates?.[0]?.content?.parts ?? []
-      const imagePart = parts.find((p) => p.inlineData?.data)
-
-      if (imagePart?.inlineData?.data) {
-        const imageBytes = Buffer.from(imagePart.inlineData.data, 'base64')
-        const mimeType   = imagePart.inlineData.mimeType ?? 'image/jpeg'
-        const ext        = mimeType.includes('png') ? 'png' : 'jpg'
-        const imagePath  = `reports/${saved.id}.${ext}`
-
-        const { error: storageError } = await supabase.storage
-          .from('property-photos')
-          .upload(imagePath, imageBytes, { contentType: mimeType, upsert: true })
-
-        if (!storageError) {
-          const { data: { publicUrl } } = supabase.storage
-            .from('property-photos')
-            .getPublicUrl(imagePath)
-
-          generatedImageUrl = publicUrl
-
-          await supabase
-            .from('reports')
-            .update({ generated_image_url: generatedImageUrl })
-            .eq('id', saved.id)
-        }
-      }
-    } catch (imgErr) {
-      // Image generation is best-effort — don't fail the whole request
-      console.error('Image generation error:', imgErr)
-    }
-
-    return NextResponse.json({ report: analysisReport, reportId: saved.id, generatedImageUrl })
+    return NextResponse.json({ report: analysisReport, reportId: saved.id, generatedImageUrl: null })
   } catch (err: unknown) {
     console.error('Analyze error:', err)
     const message = err instanceof Error ? err.message : 'Analysis failed'

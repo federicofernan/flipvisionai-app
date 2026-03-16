@@ -377,6 +377,19 @@ export default function PropertyDetailPage() {
       setAnalysisReport(json.report)
       setReportId(json.reportId)
       setShowReportPrompt(true)
+
+      // Fire-and-forget: generate the rendered image in the background
+      fetch('/api/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reportId: json.reportId,
+          propertyId: id,
+          rooms: selectedRooms,
+          style,
+          analysis: json.report,
+        }),
+      }).catch(() => { /* best-effort */ })
     } catch (err: unknown) {
       setAnalyzeError(err instanceof Error ? err.message : 'Analysis failed')
     } finally {
