@@ -145,7 +145,7 @@ export async function POST(req: NextRequest) {
 
       const imageResponse = await googleAI.models.generateContent({
         model: process.env.IMAGEN_MODEL ?? 'gemini-3.1-flash-image-preview',
-        contents: [{ role: 'user', parts: [{ text: imagePrompt }, ...allImageParts] }] as Content[],
+        contents: [{ role: 'user', parts: [{ text: imagePrompt }, ...allImageParts] }] as unknown as Content[],
         config: { responseModalities: [Modality.IMAGE, Modality.TEXT] },
       })
 
