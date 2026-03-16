@@ -307,11 +307,10 @@ export default function PropertyDetailPage() {
 
         if (limit !== null) {
           const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
-          const { data: userProps } = await supabase.from('properties').select('id').eq('user_id', user.id)
-          const propertyIds = (userProps ?? []).map((p) => p.id)
           const { count } = await supabase
-            .from('reports').select('*', { count: 'exact', head: true })
-            .in('property_id', propertyIds)
+            .from('reports')
+            .select('*, properties!inner(user_id)', { count: 'exact', head: true })
+            .eq('properties.user_id', user.id)
             .gte('created_at', startOfMonth)
           setUsageCount(count ?? 0)
         }
