@@ -24,6 +24,7 @@ import { PhotoUploader, PendingPhoto } from '@/components/PhotoUploader'
 import { RoomSelectionModal } from '@/components/RoomSelectionModal'
 import { fetchProperty, fetchPropertyPhotos } from '@/lib/queries'
 import { Property, PropertyPhoto, RoomType, AnalysisReport, RenovationStyle } from '@/lib/types'
+import { PLANS, type PlanId } from '@/lib/plans'
 import { createClient } from '@/lib/supabase/client'
 
 function formatDate(iso: string) {
@@ -279,13 +280,40 @@ export default function PropertyDetailPage() {
   const [analyzeError, setAnalyzeError]       = useState<string | null>(null)
   const [showReportPrompt, setShowReportPrompt] = useState(false)
 
+  // Usage limit
+  const [usageCount, setUsageCount]   = useState(0)
+  const [usageLimit, setUsageLimit]   = useState<number | null>(null)
+
   const load = useCallback(async () => {
     setLoading(true)
     try {
+      const supabase = createClient()
       const [prop, pics] = await Promise.all([fetchProperty(id), fetchPropertyPhotos(id)])
       if (!prop) { router.replace('/dashboard'); return }
       setProperty(prop)
       setPhotos(pics)
+
+      // Check usage limit for this user's plan
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles').select('selected_plan').eq('id', user.id).single()
+        const planId   = (profile?.selected_plan ?? 'free') as PlanId
+        const planInfo = PLANS.find((p) => p.id === planId)
+        const limit    = planInfo?.report_limit ?? null
+        setUsageLimit(limit)
+
+        if (limit !== null) {
+          const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
+          const { data: userProps } = await supabase.from('properties').select('id').eq('user_id', user.id)
+          const propertyIds = (userProps ?? []).map((p) => p.id)
+          const { count } = await supabase
+            .from('reports').select('*', { count: 'exact', head: true })
+            .in('property_id', propertyIds)
+            .gte('created_at', startOfMonth)
+          setUsageCount(count ?? 0)
+        }
+      }
     } finally {
       setLoading(false)
     }
@@ -578,25 +606,51 @@ export default function PropertyDetailPage() {
                     AI Renovation Analysis
                   </h3>
                 </div>
+                {usageLimit !== null && (
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-[10px] text-slate-400">Monthly analyses</p>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full
+                      ${usageCount >= usageLimit
+                        ? 'bg-red-50 text-red-600 border border-red-100'
+                        : 'bg-slate-100 text-slate-600'
+                      }`}>
+                      {usageCount} / {usageLimit} used
+                    </span>
+                  </div>
+                )}
                 <p className="text-xs text-slate-400 mb-4">
-                  {hasPhotos
-                    ? 'Analyze your property photos with AI to get renovation insights.'
-                    : 'Upload photos first to enable AI analysis.'
+                  {!hasPhotos
+                    ? 'Upload photos first to enable AI analysis.'
+                    : usageLimit !== null && usageCount >= usageLimit
+                      ? 'You\'ve reached your free plan limit for this month.'
+                      : 'Analyze your property photos with AI to get renovation insights.'
                   }
                 </p>
-                <button
-                  onClick={() => setShowRoomModal(true)}
-                  disabled={!hasPhotos}
-                  className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-all
-                    flex items-center justify-center gap-2
-                    ${hasPhotos
-                      ? 'bg-blue-600 text-white shadow-sm shadow-blue-200 hover:bg-blue-700 active:scale-95 cursor-pointer'
-                      : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                    }`}
-                >
-                  <Sparkles className="w-4 h-4" />
-                  {hasPhotos ? 'Analyze with AI' : 'Upload photos first'}
-                </button>
+                {usageLimit !== null && usageCount >= usageLimit ? (
+                  <button
+                    onClick={() => router.push('/signup/plan')}
+                    className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all
+                      flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600
+                      text-white shadow-sm shadow-blue-200 hover:opacity-90 active:scale-95 cursor-pointer"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    Upgrade to Pro
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setShowRoomModal(true)}
+                    disabled={!hasPhotos}
+                    className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-all
+                      flex items-center justify-center gap-2
+                      ${hasPhotos
+                        ? 'bg-blue-600 text-white shadow-sm shadow-blue-200 hover:bg-blue-700 active:scale-95 cursor-pointer'
+                        : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                      }`}
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    {hasPhotos ? 'Analyze with AI' : 'Upload photos first'}
+                  </button>
+                )}
                 {analysisReport && (
                   <div className="mt-3 flex items-center gap-2 p-2.5 rounded-xl bg-green-50 border border-green-100">
                     <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />

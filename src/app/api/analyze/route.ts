@@ -3,6 +3,7 @@ import { GoogleGenerativeAI, Part } from '@google/generative-ai'
 import { GoogleGenAI, Modality, type Content } from '@google/genai'
 import { createClient } from '@/lib/supabase/server'
 import { RoomType, ROOM_TYPE_LABELS, AnalysisReport, RenovationStyle } from '@/lib/types'
+import { PLANS, type PlanId } from '@/lib/plans'
 
 const genAI    = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
 const googleAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! })
@@ -82,6 +83,46 @@ export async function POST(req: NextRequest) {
       console.error('Failed to load prompt from DB:', promptError)
       return NextResponse.json({ error: 'Prompt configuration not found. Run prompts-schema.sql in Supabase.' }, { status: 500 })
     }
+
+    // ── Usage limit check ────────────────────────────────────────────────────
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('selected_plan')
+      .eq('id', user.id)
+      .single()
+
+    const planId   = (profile?.selected_plan ?? 'free') as PlanId
+    const planInfo = PLANS.find((p) => p.id === planId)
+    const limit    = planInfo?.report_limit ?? null
+
+    if (limit !== null) {
+      const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
+
+      // Count reports this month across all of this user's properties
+      const { data: userProps } = await supabase
+        .from('properties')
+        .select('id')
+        .eq('user_id', user.id)
+
+      const propertyIds = (userProps ?? []).map((p) => p.id)
+
+      const { count } = await supabase
+        .from('reports')
+        .select('*', { count: 'exact', head: true })
+        .in('property_id', propertyIds)
+        .gte('created_at', startOfMonth)
+
+      if ((count ?? 0) >= limit) {
+        return NextResponse.json(
+          { error: `You have reached your ${limit} analysis limit for this month. Upgrade to Pro for unlimited analyses.`, code: 'LIMIT_REACHED' },
+          { status: 403 }
+        )
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     const roomList     = Object.keys(grouped).map((r) => ROOM_TYPE_LABELS[r as RoomType] ?? r).join(', ')
     const styleValue   = `${style.label}: ${style.description}`
