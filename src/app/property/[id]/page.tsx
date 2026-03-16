@@ -377,6 +377,7 @@ export default function PropertyDetailPage() {
       setAnalysisReport(json.report)
       setReportId(json.reportId)
       setShowReportPrompt(true)
+      setUsageCount((c) => c + 1)
 
       // Fire-and-forget: generate the rendered image in the background
       fetch('/api/generate-image', {
