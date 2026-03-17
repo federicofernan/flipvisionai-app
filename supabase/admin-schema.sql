@@ -72,6 +72,25 @@ BEGIN
       'authenticated'
     );
 
+    -- Required: auth.identities entry so email/password login works
+    INSERT INTO auth.identities (
+      id,
+      user_id,
+      provider,
+      identity_data,
+      last_sign_in_at,
+      created_at,
+      updated_at
+    ) VALUES (
+      admin_id,
+      admin_id,
+      'email',
+      jsonb_build_object('sub', admin_id::text, 'email', 'admin@flipvisionai.com'),
+      NOW(),
+      NOW(),
+      NOW()
+    );
+
     INSERT INTO public.profiles (id, email, first_name, selected_plan, is_admin)
     VALUES (admin_id, 'admin@flipvisionai.com', 'Admin', 'investor', TRUE);
   END IF;
