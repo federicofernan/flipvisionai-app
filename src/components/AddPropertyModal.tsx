@@ -44,12 +44,13 @@ export function AddPropertyModal({ open, onClose, onCreated }: AddPropertyModalP
 
     try {
       const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
 
       // 1. Insert property record
       setStatusMsg('Creating property…')
       const { data: property, error: propErr } = await supabase
         .from('properties')
-        .insert({ address: address.trim(), name: name.trim() || null })
+        .insert({ address: address.trim(), name: name.trim() || null, user_id: user?.id ?? null })
         .select()
         .single()
 

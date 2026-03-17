@@ -86,18 +86,10 @@ export async function POST(req: NextRequest) {
     if (limit !== null) {
       const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
 
-      // Count reports this month across all of this user's properties
-      const { data: userProps } = await supabase
-        .from('properties')
-        .select('id')
-        .eq('user_id', user.id)
-
-      const propertyIds = (userProps ?? []).map((p) => p.id)
-
       const { count } = await supabase
         .from('reports')
         .select('*', { count: 'exact', head: true })
-        .in('property_id', propertyIds)
+        .eq('user_id', user.id)
         .gte('created_at', startOfMonth)
 
       if ((count ?? 0) >= limit) {
@@ -147,7 +139,7 @@ export async function POST(req: NextRequest) {
     // Persist the text report first so we have the reportId
     const { data: saved, error: insertError } = await supabase
       .from('reports')
-      .insert({ property_id: propertyId, rooms, analysis: JSON.stringify(analysisReport), before_photo_url: beforePhotoUrl, renovation_style: style.label })
+      .insert({ property_id: propertyId, user_id: user.id, rooms, analysis: JSON.stringify(analysisReport), before_photo_url: beforePhotoUrl, renovation_style: style.label })
       .select('id')
       .single()
 
