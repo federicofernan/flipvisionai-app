@@ -33,16 +33,16 @@ const NAV_ITEMS = [
     match: (p: string) => p === '/dashboard' || (p.startsWith('/property') && !p.startsWith('/property-analysis')),
   },
   {
-    label: 'Property Analysis',
-    href:  '/property-analysis',
-    icon:  SearchCheck,
-    match: (p: string) => p === '/property-analysis',
-  },
-  {
     label: 'My Renovation Reports',
     href:  '/reports',
     icon:  FileBarChart2,
     match: (p: string) => p === '/reports',
+  },
+  {
+    label: 'Property Analysis',
+    href:  '/property-analysis',
+    icon:  SearchCheck,
+    match: (p: string) => p === '/property-analysis',
   },
 ]
 
