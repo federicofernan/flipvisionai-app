@@ -33,73 +33,19 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- ─────────────────────────────────────────────
--- 3. Create admin user
+-- 3. Create the admin user
 -- ─────────────────────────────────────────────
--- NOTE: If the admin user already exists, this block will do nothing (ON CONFLICT).
--- The is_admin flag is stored in app_metadata so the middleware can read it from
--- the JWT without an extra DB round-trip.
-DO $$
-DECLARE
-  admin_id UUID;
-BEGIN
-  -- Only insert if the admin user doesn't already exist
-  IF NOT EXISTS (SELECT 1 FROM auth.users WHERE email = 'admin@flipvisionai.com') THEN
-    admin_id := gen_random_uuid();
-
-    INSERT INTO auth.users (
-      id,
-      instance_id,
-      email,
-      encrypted_password,
-      email_confirmed_at,
-      created_at,
-      updated_at,
-      raw_app_meta_data,
-      raw_user_meta_data,
-      aud,
-      role
-    ) VALUES (
-      admin_id,
-      '00000000-0000-0000-0000-000000000000',
-      'admin@flipvisionai.com',
-      crypt('flipvisionai_admin_20260317', gen_salt('bf')),
-      NOW(),
-      NOW(),
-      NOW(),
-      '{"provider":"email","providers":["email"],"is_admin":true}',
-      '{"first_name":"Admin"}',
-      'authenticated',
-      'authenticated'
-    );
-
-    -- Required: auth.identities entry so email/password login works
-    INSERT INTO auth.identities (
-      id,
-      user_id,
-      provider_id,
-      provider,
-      identity_data,
-      last_sign_in_at,
-      created_at,
-      updated_at
-    ) VALUES (
-      admin_id,
-      admin_id,
-      'admin@flipvisionai.com',
-      'email',
-      jsonb_build_object('sub', admin_id::text, 'email', 'admin@flipvisionai.com'),
-      NOW(),
-      NOW(),
-      NOW()
-    );
-
-    INSERT INTO public.profiles (id, email, first_name, selected_plan, is_admin)
-    VALUES (admin_id, 'admin@flipvisionai.com', 'Admin', 'investor', TRUE);
-  END IF;
-END $$;
+-- DO NOT insert directly into auth.users via SQL — GoTrue won't recognise it.
+-- Instead, create the user through the Supabase Dashboard:
+--   Authentication → Users → Add user → Create new user
+--   Email:    admin@flipvisionai.com
+--   Password: flipvisionai_admin_20260317
+--   ✓ Auto Confirm User
+--
+-- Then run the two UPDATE statements below to grant admin access.
 
 -- ─────────────────────────────────────────────
--- 4. If admin user already existed, patch app_metadata to add is_admin flag
+-- 4. Grant admin flag (run after creating the user in the Dashboard)
 -- ─────────────────────────────────────────────
 UPDATE auth.users
 SET raw_app_meta_data = raw_app_meta_data || '{"is_admin": true}'::jsonb
