@@ -40,41 +40,41 @@ ON CONFLICT (id) DO NOTHING;
 -- the JWT without an extra DB round-trip.
 DO $$
 DECLARE
-  admin_id UUID := gen_random_uuid();
+  admin_id UUID;
 BEGIN
-  INSERT INTO auth.users (
-    id,
-    instance_id,
-    email,
-    encrypted_password,
-    email_confirmed_at,
-    created_at,
-    updated_at,
-    raw_app_meta_data,
-    raw_user_meta_data,
-    aud,
-    role
-  ) VALUES (
-    admin_id,
-    '00000000-0000-0000-0000-000000000000',
-    'admin@flipvisionai.com',
-    crypt('flipvisionai_admin_20260317', gen_salt('bf')),
-    NOW(),
-    NOW(),
-    NOW(),
-    '{"provider":"email","providers":["email"],"is_admin":true}',
-    '{"first_name":"Admin"}',
-    'authenticated',
-    'authenticated'
-  )
-  ON CONFLICT (email) DO NOTHING;
+  -- Only insert if the admin user doesn't already exist
+  IF NOT EXISTS (SELECT 1 FROM auth.users WHERE email = 'admin@flipvisionai.com') THEN
+    admin_id := gen_random_uuid();
 
-  -- Profile row — use the id we just inserted (or skip if user already existed)
-  INSERT INTO public.profiles (id, email, first_name, selected_plan, is_admin)
-  SELECT admin_id, 'admin@flipvisionai.com', 'Admin', 'investor', TRUE
-  WHERE NOT EXISTS (
-    SELECT 1 FROM public.profiles WHERE email = 'admin@flipvisionai.com'
-  );
+    INSERT INTO auth.users (
+      id,
+      instance_id,
+      email,
+      encrypted_password,
+      email_confirmed_at,
+      created_at,
+      updated_at,
+      raw_app_meta_data,
+      raw_user_meta_data,
+      aud,
+      role
+    ) VALUES (
+      admin_id,
+      '00000000-0000-0000-0000-000000000000',
+      'admin@flipvisionai.com',
+      crypt('flipvisionai_admin_20260317', gen_salt('bf')),
+      NOW(),
+      NOW(),
+      NOW(),
+      '{"provider":"email","providers":["email"],"is_admin":true}',
+      '{"first_name":"Admin"}',
+      'authenticated',
+      'authenticated'
+    );
+
+    INSERT INTO public.profiles (id, email, first_name, selected_plan, is_admin)
+    VALUES (admin_id, 'admin@flipvisionai.com', 'Admin', 'investor', TRUE);
+  END IF;
 END $$;
 
 -- ─────────────────────────────────────────────
