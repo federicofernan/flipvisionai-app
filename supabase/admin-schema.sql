@@ -76,6 +76,7 @@ BEGIN
     INSERT INTO auth.identities (
       id,
       user_id,
+      provider_id,
       provider,
       identity_data,
       last_sign_in_at,
@@ -84,6 +85,7 @@ BEGIN
     ) VALUES (
       admin_id,
       admin_id,
+      'admin@flipvisionai.com',
       'email',
       jsonb_build_object('sub', admin_id::text, 'email', 'admin@flipvisionai.com'),
       NOW(),
