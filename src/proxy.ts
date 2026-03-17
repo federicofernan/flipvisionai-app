@@ -37,6 +37,27 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
+  // ── Admin route protection ─────────────────────────────────────────────────
+  const isAdminPage = pathname.startsWith('/admin')
+  const isAdminApi  = pathname.startsWith('/api/admin')
+
+  if (isAdminPage || isAdminApi) {
+    // Admin login page is always accessible
+    if (pathname === '/admin/login') return supabaseResponse
+
+    const isAdmin = user?.app_metadata?.is_admin === true
+
+    if (!user || !isAdmin) {
+      if (isAdminApi) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+      return NextResponse.redirect(new URL('/admin/login', request.url))
+    }
+
+    return supabaseResponse
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+
   // Not authenticated + protected route → redirect to /login
   if (!user && !isPublicPath(pathname)) {
     const loginUrl = new URL('/login', request.url)
