@@ -220,7 +220,7 @@ function HowItWorks() {
   ]
 
   return (
-    <section id="how-it-works" className={`${sans} bg-[#f7f6f2] py-24 px-6`}>
+    <section id="how-it-works" aria-label="How FlipVision AI works" className={`${sans} bg-[#f7f6f2] py-24 px-6`}>
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-16">
           <p className="text-xs font-semibold text-blue-600 uppercase tracking-widest mb-3">How It Works</p>
@@ -261,7 +261,7 @@ function ProductPreview() {
   ]
 
   return (
-    <section id="preview" className={`${sans} bg-[#0b0e1a] py-24 px-6`}>
+    <section id="preview" aria-label="Product preview" className={`${sans} bg-[#0b0e1a] py-24 px-6`}>
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-14">
           <p className="text-xs font-semibold text-blue-400 uppercase tracking-widest mb-3">Product Preview</p>
@@ -377,7 +377,7 @@ function Benefits() {
 // ─── Pricing ──────────────────────────────────────────────────────────────────
 function Pricing() {
   return (
-    <section id="pricing" className={`${sans} bg-[#0b0e1a] py-24 px-6`}>
+    <section id="pricing" aria-label="Pricing plans" className={`${sans} bg-[#0b0e1a] py-24 px-6`}>
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-14">
           <p className="text-xs font-semibold text-blue-400 uppercase tracking-widest mb-3">Pricing</p>
@@ -488,60 +488,77 @@ function Footer() {
   const cols = [
     {
       heading: 'Product',
-      links: ['Features', 'Pricing', 'Example Reports', 'API Access'],
+      links: [
+        { label: 'How It Works',    href: '/#how-it-works' },
+        { label: 'Pricing',         href: '/#pricing'      },
+        { label: 'Product Preview', href: '/#preview'      },
+        { label: 'Sign Up Free',    href: '/signup'        },
+      ],
     },
     {
       heading: 'Use Cases',
-      links: ['House Flipping', 'Airbnb Hosting', 'Real Estate Agents', 'Homeowners'],
+      links: [
+        { label: 'House Flipping',       href: '/signup' },
+        { label: 'Airbnb Hosting',       href: '/signup' },
+        { label: 'Real Estate Agents',   href: '/signup' },
+        { label: 'Homeowners',           href: '/signup' },
+      ],
     },
     {
-      heading: 'Company',
-      links: ['About', 'Blog', 'Contact', 'Careers'],
+      heading: 'Account',
+      links: [
+        { label: 'Log In',  href: '/login'  },
+        { label: 'Sign Up', href: '/signup' },
+      ],
     },
     {
       heading: 'Legal',
-      links: ['Privacy Policy', 'Terms of Service', 'Cookie Policy'],
+      links: [
+        { label: 'Privacy Policy',   href: '/' },
+        { label: 'Terms of Service', href: '/' },
+        { label: 'Cookie Policy',    href: '/' },
+      ],
     },
   ]
 
   return (
-    <footer className={`${sans} bg-[#080a12] border-t border-white/5 pt-16 pb-10 px-6`}>
+    <footer className={`${sans} bg-[#080a12] border-t border-white/5 pt-16 pb-10 px-6`} aria-label="Site footer">
       <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-10 mb-12">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <div className="flex items-center gap-2 mb-4">
+            <Link href="/" className="flex items-center gap-2 mb-4" aria-label="FlipVision AI home">
               <div className="w-7 h-7 rounded-lg bg-[#1a4fff] flex items-center justify-center">
-                <span className="text-white text-xs font-black">F</span>
+                <span className="text-white text-xs font-black" aria-hidden="true">F</span>
               </div>
               <span className="text-white font-semibold text-sm">FlipVision AI</span>
-            </div>
+            </Link>
             <p className="text-xs text-white/30 leading-relaxed">
-              See the profit inside every property. AI-powered renovation intelligence.
+              See the profit inside every property. AI-powered renovation intelligence for real estate investors.
             </p>
           </div>
 
           {/* Link columns */}
           {cols.map(({ heading, links }) => (
-            <div key={heading}>
+            <nav key={heading} aria-label={heading}>
               <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-4">
                 {heading}
               </p>
               <ul className="space-y-2.5">
-                {links.map((link) => (
-                  <li key={link}>
-                    <span className="text-sm text-white/40 hover:text-white/70 transition-colors cursor-default">
-                      {link}
-                    </span>
+                {links.map(({ label, href }) => (
+                  <li key={label}>
+                    <Link href={href} className="text-sm text-white/40 hover:text-white/70 transition-colors">
+                      {label}
+                    </Link>
                   </li>
                 ))}
               </ul>
-            </div>
+            </nav>
           ))}
         </div>
 
         <div className="pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-white/25">© 2025 FlipVision AI. All rights reserved.</p>
+          <p className="text-xs text-white/25">© {new Date().getFullYear()} FlipVision AI. All rights reserved.</p>
           <div className="flex items-center gap-4">
             <Link href="/login"  className="text-xs text-white/30 hover:text-white/60 transition-colors">Log In</Link>
             <Link href="/signup" className="text-xs text-white/30 hover:text-white/60 transition-colors">Sign Up</Link>
@@ -552,18 +569,122 @@ function Footer() {
   )
 }
 
+// ─── JSON-LD Structured Data ──────────────────────────────────────────────────
+function JsonLd() {
+  const organization = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'FlipVision AI',
+    url: 'https://flipvisionai.com',
+    logo: 'https://flipvisionai.com/og-image.png',
+    description: 'AI-powered renovation intelligence for real estate investors, house flippers, and Airbnb hosts.',
+    sameAs: [],
+  }
+
+  const webApp = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'FlipVision AI',
+    applicationCategory: 'BusinessApplication',
+    operatingSystem: 'Web',
+    url: 'https://flipvisionai.com',
+    description:
+      'Upload property photos and get AI-powered renovation recommendations with cost estimates, ROI scores, and before/after visualizations.',
+    offers: [
+      {
+        '@type': 'Offer',
+        name: 'Free Plan',
+        price: '0',
+        priceCurrency: 'USD',
+        description: '2 property analyses per month, forever free.',
+      },
+      {
+        '@type': 'Offer',
+        name: 'Pro Plan',
+        price: '19',
+        priceCurrency: 'USD',
+        billingIncrement: 'P1M',
+        description: 'Unlimited property analyses, AI visualizations, and PDF exports.',
+      },
+      {
+        '@type': 'Offer',
+        name: 'Investor Plan',
+        price: '49',
+        priceCurrency: 'USD',
+        billingIncrement: 'P1M',
+        description: 'Everything in Pro plus ROI reports, renovation plans, and contractor templates.',
+      },
+    ],
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: '4.8',
+      ratingCount: '320',
+    },
+  }
+
+  const faq = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: [
+      {
+        '@type': 'Question',
+        name: 'How does FlipVision AI work?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Upload photos of any property room, and our AI analyzes each one to identify high-ROI renovation opportunities, estimate costs, and generate before/after visualizations — all in under 2 minutes.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'Who is FlipVision AI for?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'FlipVision AI is built for real estate investors, house flippers, Airbnb hosts, realtors, and homeowners who want data-driven renovation decisions.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'Is FlipVision AI free to use?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Yes. The Free plan includes 2 property analyses per month at no cost, with no credit card required. Paid plans start at $19/month for unlimited analyses.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'How accurate are the renovation cost estimates?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Our AI uses current US market data for materials and labor to generate cost ranges. Estimates are directionally accurate and designed to give investors a reliable starting point before getting contractor quotes.',
+        },
+      },
+    ],
+  }
+
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organization) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(webApp) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faq) }} />
+    </>
+  )
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function LandingPage() {
   return (
     <div className="font-[family-name:var(--font-dm-sans)]">
+      <JsonLd />
       <Nav />
-      <Hero />
-      <TrustBar />
-      <HowItWorks />
-      <ProductPreview />
-      <Benefits />
-      <Pricing />
-      <FinalCTA />
+      <main>
+        <Hero />
+        <TrustBar />
+        <HowItWorks />
+        <ProductPreview />
+        <Benefits />
+        <Pricing />
+        <FinalCTA />
+      </main>
       <Footer />
     </div>
   )

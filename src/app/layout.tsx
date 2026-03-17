@@ -22,10 +22,81 @@ const dmSans = DM_Sans({
   display: 'swap',
 })
 
+const BASE_URL = 'https://flipvisionai.com'
+
 export const metadata: Metadata = {
-  title: 'FlipVision AI — See the Profit Inside Every Property',
+  metadataBase: new URL(BASE_URL),
+
+  title: {
+    default: 'FlipVision AI — See the Profit Inside Every Property',
+    template: '%s | FlipVision AI',
+  },
+
   description:
-    'Upload property photos and let AI reveal the renovations that increase value — with visualizations before you spend a dollar.',
+    'Upload property photos and let AI reveal the renovations that increase value — with cost estimates, ROI scores, and before/after visualizations. Used by house flippers, real estate investors, and Airbnb hosts.',
+
+  keywords: [
+    'house flipping AI',
+    'property renovation analysis',
+    'real estate investment tool',
+    'renovation ROI calculator',
+    'AI renovation planner',
+    'property value estimator',
+    'flip property software',
+    'real estate AI',
+    'home renovation cost estimator',
+    'investment property analyzer',
+  ],
+
+  authors: [{ name: 'FlipVision AI', url: BASE_URL }],
+  creator: 'FlipVision AI',
+  publisher: 'FlipVision AI',
+
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: BASE_URL,
+    siteName: 'FlipVision AI',
+    title: 'FlipVision AI — See the Profit Inside Every Property',
+    description:
+      'AI-powered renovation intelligence. Upload photos, get instant cost estimates, ROI scores, and visualizations for any property.',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'FlipVision AI — AI-powered renovation analysis for real estate investors',
+      },
+    ],
+  },
+
+  twitter: {
+    card: 'summary_large_image',
+    site: '@flipvisionai',
+    creator: '@flipvisionai',
+    title: 'FlipVision AI — See the Profit Inside Every Property',
+    description:
+      'AI-powered renovation intelligence. Upload photos, get instant cost estimates, ROI scores, and visualizations.',
+    images: ['/og-image.png'],
+  },
+
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+
+  alternates: {
+    canonical: BASE_URL,
+  },
+
+  category: 'technology',
 }
 
 export default function RootLayout({
