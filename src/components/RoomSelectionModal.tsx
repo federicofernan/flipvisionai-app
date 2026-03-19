@@ -1,13 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Sparkles, CheckSquare, Square, Images, ChevronRight, ChevronLeft, Info } from 'lucide-react'
+import { X, Sparkles, CheckSquare, Square, Images, ChevronRight, ChevronLeft, Info, Clock } from 'lucide-react'
 import { PropertyPhoto, RoomType, ROOM_TYPE_LABELS, RenovationStyle } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
 
 interface RoomSelectionModalProps {
   photos: PropertyPhoto[]
-  onConfirm: (selectedRooms: RoomType[], style: RenovationStyle) => void
+  onConfirm: (selectedRooms: RoomType[], style: RenovationStyle, includeTimeline: boolean) => void
   onClose: () => void
 }
 
@@ -30,7 +30,7 @@ const STYLE_ICONS: Record<string, string> = {
 
 export function RoomSelectionModal({ photos, onConfirm, onClose }: RoomSelectionModalProps) {
   // ── Step ────────────────────────────────────────────────────────────────────
-  const [step, setStep] = useState<1 | 2>(1)
+  const [step, setStep] = useState<1 | 2 | 3>(1)
 
   // ── Step 1: room selection ───────────────────────────────────────────────────
   const roomGroups = photos.reduce<Record<RoomType, number>>((acc, p) => {
@@ -54,6 +54,9 @@ export function RoomSelectionModal({ photos, onConfirm, onClose }: RoomSelection
     if (selected.size === availableRooms.length) setSelected(new Set())
     else setSelected(new Set(availableRooms))
   }
+
+  // ── Step 3: timeline option ──────────────────────────────────────────────────
+  const [includeTimeline, setIncludeTimeline] = useState(false)
 
   // ── Step 2: style selection ──────────────────────────────────────────────────
   const FALLBACK_STYLES: RenovationStyle[] = [
@@ -86,7 +89,7 @@ export function RoomSelectionModal({ photos, onConfirm, onClose }: RoomSelection
 
   const handleConfirm = () => {
     if (!selectedStyle || selected.size === 0) return
-    onConfirm(Array.from(selected), selectedStyle)
+    onConfirm(Array.from(selected), selectedStyle, includeTimeline)
   }
 
   return (
@@ -107,7 +110,7 @@ export function RoomSelectionModal({ photos, onConfirm, onClose }: RoomSelection
             <div>
               <h2 className="text-sm font-semibold text-slate-900">AI Analysis</h2>
               <p className="text-xs text-slate-500">
-                {step === 1 ? 'Step 1 of 2 — Select rooms' : 'Step 2 of 2 — Choose a style'}
+                {step === 1 ? 'Step 1 of 3 — Select rooms' : step === 2 ? 'Step 2 of 3 — Choose a style' : 'Step 3 of 3 — Project timeline'}
               </p>
             </div>
           </div>
@@ -116,6 +119,7 @@ export function RoomSelectionModal({ photos, onConfirm, onClose }: RoomSelection
             <div className="flex items-center gap-1">
               <div className={`w-2 h-2 rounded-full transition-colors ${step === 1 ? 'bg-blue-600' : 'bg-slate-200'}`} />
               <div className={`w-2 h-2 rounded-full transition-colors ${step === 2 ? 'bg-blue-600' : 'bg-slate-200'}`} />
+              <div className={`w-2 h-2 rounded-full transition-colors ${step === 3 ? 'bg-blue-600' : 'bg-slate-200'}`} />
             </div>
             <button
               onClick={onClose}
@@ -289,6 +293,74 @@ export function RoomSelectionModal({ photos, onConfirm, onClose }: RoomSelection
             <div className="px-6 pb-5 flex gap-3">
               <button
                 onClick={() => setStep(1)}
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200
+                  text-sm text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer font-medium"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Back
+              </button>
+              <button
+                onClick={() => setStep(3)}
+                disabled={!selectedStyle || selected.size === 0}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl
+                  bg-blue-600 text-white text-sm font-semibold shadow-sm shadow-blue-200
+                  hover:bg-blue-700 active:scale-95 transition-all cursor-pointer
+                  disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* ── Step 3: Timeline ───────────────────────────────────────────── */}
+        {step === 3 && (
+          <>
+            <div className="px-6 py-5">
+              <p className="text-xs text-slate-500 mb-5 leading-relaxed">
+                Optionally include a project timeline in your report. The AI will generate a realistic
+                phase-by-phase schedule based on your renovation scope.
+              </p>
+
+              <button
+                onClick={() => setIncludeTimeline((v) => !v)}
+                className={`w-full flex items-start gap-4 px-4 py-4 rounded-xl border text-left
+                  transition-all cursor-pointer
+                  ${includeTimeline
+                    ? 'bg-blue-50 border-blue-200'
+                    : 'bg-slate-50 border-slate-100 hover:border-slate-200'
+                  }`}
+              >
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0
+                  ${includeTimeline ? 'bg-blue-600' : 'bg-slate-200'}`}>
+                  <Clock className={`w-4 h-4 ${includeTimeline ? 'text-white' : 'text-slate-500'}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm font-semibold mb-1 ${includeTimeline ? 'text-blue-700' : 'text-slate-800'}`}>
+                    Include Project Timeline
+                  </p>
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    Generate a realistic schedule with phases like demolition, framing, plumbing,
+                    electrical, and finishes — with durations and task dependencies.
+                  </p>
+                </div>
+                {includeTimeline
+                  ? <CheckSquare className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                  : <Square className="w-4 h-4 text-slate-300 shrink-0 mt-0.5" />
+                }
+              </button>
+
+              {!includeTimeline && (
+                <p className="mt-3 text-[11px] text-slate-400 text-center">
+                  You can skip this — the timeline can always be added in a future analysis.
+                </p>
+              )}
+            </div>
+
+            <div className="px-6 pb-5 flex gap-3">
+              <button
+                onClick={() => setStep(2)}
                 className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200
                   text-sm text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer font-medium"
               >

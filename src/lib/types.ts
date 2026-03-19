@@ -86,6 +86,24 @@ export interface RoomAnalysis {
   cost_estimate?: RoomCostEstimate
 }
 
+export interface TimelinePhase {
+  phase_number: number
+  phase_name: string
+  start_week: number
+  duration_weeks: number
+  rooms_affected: string[]
+  description: string
+  dependencies: string
+  notes?: string
+}
+
+export interface ProjectTimeline {
+  total_duration_weeks: number
+  daily_holding_cost: number
+  total_holding_cost: number
+  phases: TimelinePhase[]
+}
+
 export interface AnalysisReport {
   overall_assessment: {
     condition: string
@@ -105,4 +123,5 @@ export interface AnalysisReport {
     total_low: number
     total_high: number
   }
+  project_timeline?: ProjectTimeline
 }

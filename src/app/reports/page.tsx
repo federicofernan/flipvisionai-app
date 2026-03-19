@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { AppShell } from '@/components/AppShell'
 import { createClient } from '@/lib/supabase/client'
-import { ROOM_TYPE_LABELS, RoomType, AnalysisReport } from '@/lib/types'
+import { ROOM_TYPE_LABELS, RoomType, AnalysisReport, ProjectTimeline } from '@/lib/types'
 import {
   FileBarChart2,
   Sparkles,
@@ -20,6 +20,8 @@ import {
   Star,
   Download,
   DollarSign,
+  CalendarDays,
+  ArrowRight,
 } from 'lucide-react'
 
 interface Report {
@@ -255,9 +257,138 @@ function CostReport({ report }: { report: AnalysisReport }) {
   )
 }
 
+const PHASE_COLORS = [
+  { bar: 'bg-blue-500',    badge: 'bg-blue-50 text-blue-700 border-blue-100' },
+  { bar: 'bg-indigo-500',  badge: 'bg-indigo-50 text-indigo-700 border-indigo-100' },
+  { bar: 'bg-violet-500',  badge: 'bg-violet-50 text-violet-700 border-violet-100' },
+  { bar: 'bg-purple-500',  badge: 'bg-purple-50 text-purple-700 border-purple-100' },
+  { bar: 'bg-fuchsia-500', badge: 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-100' },
+  { bar: 'bg-rose-500',    badge: 'bg-rose-50 text-rose-700 border-rose-100' },
+  { bar: 'bg-orange-500',  badge: 'bg-orange-50 text-orange-700 border-orange-100' },
+  { bar: 'bg-amber-500',   badge: 'bg-amber-50 text-amber-700 border-amber-100' },
+  { bar: 'bg-teal-500',    badge: 'bg-teal-50 text-teal-700 border-teal-100' },
+  { bar: 'bg-cyan-500',    badge: 'bg-cyan-50 text-cyan-700 border-cyan-100' },
+]
+
+function fmtCurrency(n: number) {
+  return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
+}
+
+function TimelineReport({ timeline }: { timeline: ProjectTimeline }) {
+  const totalWeeks = timeline.total_duration_weeks
+  return (
+    <div className="space-y-4">
+      {/* Summary banner */}
+      <div data-pdf-section className="grid grid-cols-3 gap-2">
+        <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-100 text-center">
+          <CalendarDays className="w-4 h-4 text-indigo-500 mb-1" />
+          <p className="text-sm font-bold text-indigo-700">{totalWeeks} wks</p>
+          <p className="text-[10px] text-slate-500 mt-0.5">Duration</p>
+        </div>
+        <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100 text-center">
+          <DollarSign className="w-4 h-4 text-amber-500 mb-1" />
+          <p className="text-sm font-bold text-amber-700">{fmtCurrency(timeline.daily_holding_cost)}/day</p>
+          <p className="text-[10px] text-slate-500 mt-0.5">Holding Cost</p>
+        </div>
+        <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-gradient-to-br from-red-50 to-rose-50 border border-red-100 text-center">
+          <TrendingUp className="w-4 h-4 text-red-500 mb-1" />
+          <p className="text-sm font-bold text-red-700">{fmtCurrency(timeline.total_holding_cost)}</p>
+          <p className="text-[10px] text-slate-500 mt-0.5">Total Holding</p>
+        </div>
+      </div>
+
+      {/* Gantt-style bar chart */}
+      {timeline.phases.length > 0 && (
+        <div data-pdf-section className="rounded-xl border border-slate-100 overflow-hidden">
+          <div className="px-3 py-2.5 bg-slate-50 border-b border-slate-100">
+            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Schedule Overview</p>
+          </div>
+          <div className="p-3 space-y-2">
+            {timeline.phases.map((phase, i) => {
+              const color   = PHASE_COLORS[i % PHASE_COLORS.length]
+              const pct     = Math.round((phase.duration_weeks / totalWeeks) * 100)
+              const offset  = Math.round(((phase.start_week - 1) / totalWeeks) * 100)
+              return (
+                <div key={i} className="flex items-center gap-2">
+                  <p className="text-[10px] text-slate-600 w-28 shrink-0 truncate">{phase.phase_name}</p>
+                  <div className="flex-1 h-4 bg-slate-100 rounded-full overflow-hidden relative">
+                    <div
+                      className={`absolute top-0 h-full rounded-full ${color.bar}`}
+                      style={{ left: `${Math.min(offset, 95)}%`, width: `${Math.max(pct, 4)}%` }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-slate-400 w-10 text-right shrink-0">
+                    {phase.duration_weeks}w
+                  </p>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Phase details */}
+      {timeline.phases.map((phase, i) => {
+        const color = PHASE_COLORS[i % PHASE_COLORS.length]
+        return (
+          <div data-pdf-section key={i} className="rounded-xl border border-slate-100 overflow-hidden">
+            <div className="flex items-center justify-between px-3 py-2.5 bg-slate-50 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${color.bar}`} />
+                <h3 className="text-xs font-semibold text-slate-800">
+                  {phase.phase_number}. {phase.phase_name}
+                </h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-slate-400">Wk {phase.start_week}</span>
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${color.badge}`}>
+                  {phase.duration_weeks} wk{phase.duration_weeks !== 1 ? 's' : ''}
+                </span>
+              </div>
+            </div>
+            <div className="p-3 space-y-2">
+              {phase.description && (
+                <p className="text-xs text-slate-700 leading-relaxed">{phase.description}</p>
+              )}
+              {phase.rooms_affected.length > 0 && (
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {phase.rooms_affected.map((room, j) => (
+                    <span key={j} className="text-[10px] font-medium text-blue-700 bg-blue-50
+                      border border-blue-100 px-2 py-0.5 rounded-full capitalize">
+                      {room.replace('_', ' ')}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {phase.dependencies && (
+                <div className="flex items-start gap-1.5">
+                  <ArrowRight className="w-3 h-3 text-slate-400 shrink-0 mt-0.5" />
+                  <p className="text-[10px] text-slate-400 leading-relaxed">
+                    <span className="font-medium text-slate-500">Depends on:</span> {phase.dependencies}
+                  </p>
+                </div>
+              )}
+              {phase.notes && (
+                <div className="flex items-start gap-1.5 mt-1">
+                  <AlertCircle className="w-3 h-3 text-amber-400 shrink-0 mt-0.5" />
+                  <p className="text-[10px] text-slate-500 leading-relaxed">{phase.notes}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      })}
+
+      <p className="text-[10px] text-slate-400 leading-relaxed border-t border-slate-100 pt-3">
+        Timeline assumes a single GC managing subcontractors in a normal (non-peak) US market. Actual durations may vary based on permit timelines, material lead times, and contractor availability.
+      </p>
+    </div>
+  )
+}
+
 function ReportCard({ report }: { report: Report }) {
   const [expanded, setExpanded]           = useState(false)
-  const [activeTab, setActiveTab]         = useState<'analysis' | 'cost'>('analysis')
+  const [activeTab, setActiveTab]         = useState<'analysis' | 'cost' | 'timeline'>('analysis')
   const [pdfMode, setPdfMode]             = useState(false)
   const [downloading, setDownloading]     = useState(false)
   const [beforePhotoUrl, setBeforePhotoUrl] = useState<string | null>(report.before_photo_url)
@@ -270,7 +401,8 @@ function ReportCard({ report }: { report: Report }) {
   let parsed: AnalysisReport | null = null
   try { parsed = JSON.parse(report.analysis) } catch { /* legacy text report */ }
 
-  const hasCost = parsed?.rooms.some((r) => r.cost_estimate?.line_items?.length)
+  const hasCost     = parsed?.rooms.some((r) => r.cost_estimate?.line_items?.length)
+  const hasTimeline = !!(parsed?.project_timeline?.phases?.length && parsed.project_timeline.total_duration_weeks)
 
   const preview = parsed?.overall_assessment.summary?.slice(0, 130) + '…'
 
@@ -526,10 +658,21 @@ function ReportCard({ report }: { report: Report }) {
                     Cost Estimate
                   </button>
                 )}
+                {hasTimeline && (
+                  <button
+                    onClick={() => setActiveTab('timeline')}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer
+                      ${activeTab === 'timeline' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                    <CalendarDays className="w-3.5 h-3.5" />
+                    Timeline
+                  </button>
+                )}
               </div>
               <div className="pb-5">
                 {activeTab === 'analysis' && <JsonReport report={parsed} />}
                 {activeTab === 'cost' && hasCost && <CostReport report={parsed} />}
+                {activeTab === 'timeline' && hasTimeline && <TimelineReport timeline={parsed.project_timeline!} />}
               </div>
             </div>
           )}
@@ -573,6 +716,14 @@ function ReportCard({ report }: { report: Report }) {
                       <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest">Cost Estimation</p>
                     </div>
                     <CostReport report={parsed} />
+                  </>
+                )}
+                {hasTimeline && (
+                  <>
+                    <div data-pdf-section data-pdf-page-break className="pb-2 border-b border-slate-200 pt-2">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest">Project Timeline</p>
+                    </div>
+                    <TimelineReport timeline={parsed.project_timeline!} />
                   </>
                 )}
               </div>

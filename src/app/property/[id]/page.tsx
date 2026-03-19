@@ -362,7 +362,7 @@ export default function PropertyDetailPage() {
   }
 
   // ── AI analysis handler ─────────────────────────────────────────────────
-  const handleAnalyze = async (selectedRooms: RoomType[], style: RenovationStyle) => {
+  const handleAnalyze = async (selectedRooms: RoomType[], style: RenovationStyle, includeTimeline: boolean) => {
     setShowRoomModal(false)
     setAnalyzing(true)
     setAnalyzeError(null)
@@ -371,7 +371,7 @@ export default function PropertyDetailPage() {
       const res = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ propertyId: id, rooms: selectedRooms, style }),
+        body: JSON.stringify({ propertyId: id, rooms: selectedRooms, style, includeTimeline }),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'Analysis failed')

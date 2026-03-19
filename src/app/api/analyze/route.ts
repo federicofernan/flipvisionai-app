@@ -23,7 +23,7 @@ function parseGeminiJson(text: string): AnalysisReport {
 
 export async function POST(req: NextRequest) {
   try {
-    const { propertyId, rooms, style }: { propertyId: string; rooms: RoomType[]; style: RenovationStyle } = await req.json()
+    const { propertyId, rooms, style, includeTimeline }: { propertyId: string; rooms: RoomType[]; style: RenovationStyle; includeTimeline?: boolean } = await req.json()
 
     if (!propertyId || !rooms?.length) {
       return NextResponse.json({ error: 'Missing propertyId or rooms' }, { status: 400 })
@@ -101,11 +101,23 @@ export async function POST(req: NextRequest) {
     }
     // ─────────────────────────────────────────────────────────────────────────
 
-    const roomList     = Object.keys(grouped).map((r) => ROOM_TYPE_LABELS[r as RoomType] ?? r).join(', ')
-    const styleValue   = `${style.label}: ${style.description}`
-    const prompt       = promptRow.content
+    // Fetch timeline prompt if requested
+    let timelineContent = ''
+    if (includeTimeline) {
+      const { data: timelineRow } = await supabase
+        .from('prompts')
+        .select('content')
+        .eq('name', 'timeline_analysis')
+        .single()
+      timelineContent = timelineRow?.content ?? ''
+    }
+
+    const roomList   = Object.keys(grouped).map((r) => ROOM_TYPE_LABELS[r as RoomType] ?? r).join(', ')
+    const styleValue = `${style.label}: ${style.description}`
+    const prompt     = promptRow.content
       .replace('{{rooms}}', roomList)
       .replace('{{renovation_style}}', styleValue)
+      .replace('{{timeline_analysis}}', timelineContent)
 
     // The first photo across all analyzed rooms (ordered by created_at asc from the DB query)
     const beforePhotoUrl = photos[0]?.public_url ?? null
