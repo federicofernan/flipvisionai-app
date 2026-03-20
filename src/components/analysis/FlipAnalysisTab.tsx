@@ -38,6 +38,11 @@ function WaterfallRow({
 
 export function FlipAnalysisTab({ report }: Props) {
   const f = report.flipAnalysis
+
+  // Guard against fields the AI occasionally omits
+  const roi          = f.roi          ?? (f.totalInvestment > 0 ? (f.estimatedProfit / f.totalInvestment) * 100 : 0)
+  const profitMargin = f.profitMargin ?? (f.arvEstimate      > 0 ? (f.estimatedProfit / f.arvEstimate)      * 100 : 0)
+
   const profitable = f.estimatedProfit >= 0
 
   return (
@@ -77,12 +82,12 @@ export function FlipAnalysisTab({ report }: Props) {
         <div className={`p-4 rounded-2xl border ${profitable ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
           <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-1">ROI</p>
           <p className={`text-2xl font-black ${profitable ? 'text-green-700' : 'text-red-600'}`}>
-            {f.roi.toFixed(1)}%
+            {roi.toFixed(1)}%
           </p>
         </div>
         <div className="p-4 rounded-2xl border bg-blue-50 border-blue-100">
           <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-1">Profit Margin</p>
-          <p className="text-2xl font-black text-blue-700">{f.profitMargin.toFixed(1)}%</p>
+          <p className="text-2xl font-black text-blue-700">{profitMargin.toFixed(1)}%</p>
         </div>
       </div>
 

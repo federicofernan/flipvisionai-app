@@ -25,7 +25,7 @@ export function MetricCards({ report }: MetricCardsProps) {
   const cashFlow = report.rentalAnalysis.monthlyCashFlow
   const profit   = report.flipAnalysis.estimatedProfit
   const capRate  = report.rentalAnalysis.capRate
-  const roi      = report.flipAnalysis.roi
+  const roi      = report.flipAnalysis.roi ?? (report.flipAnalysis.totalInvestment > 0 ? (report.flipAnalysis.estimatedProfit / report.flipAnalysis.totalInvestment) * 100 : 0)
 
   const cards = [
     {
