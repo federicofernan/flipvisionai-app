@@ -443,6 +443,88 @@ function Pricing() {
   )
 }
 
+// ─── FAQ ─────────────────────────────────────────────────────────────────────
+const FAQ_ITEMS = [
+  {
+    q: 'Is there a free plan?',
+    a: 'Yes — no credit card required. Your free account includes 2 property analyses per month, room-by-room breakdowns, and cost and value estimates, forever.',
+  },
+  {
+    q: 'How accurate are the estimates?',
+    a: 'Our cost and value estimates are based on real contractor rates, material costs, and regional market data. They are designed for budgeting and prioritization — we recommend getting contractor quotes for projects you decide to move forward with.',
+  },
+  {
+    q: 'Do I need renovation experience to use FlipVision AI?',
+    a: 'Not at all. Just upload photos of any property and we do the rest. FlipVision AI is designed to be useful whether you\'re a seasoned investor or buying your first home.',
+  },
+  {
+    q: 'How long does an analysis take?',
+    a: 'Under 2 minutes from the time you finish uploading your photos.',
+  },
+  {
+    q: 'Can I see what renovations would look like before spending anything?',
+    a: 'Yes. Pro and Investor plan subscribers receive AI-generated before/after visualizations for every renovation recommendation.',
+  },
+  {
+    q: 'Do I have to generate a renovation timeline?',
+    a: 'No — it\'s optional. Your report always includes cost estimates, ROI scores, and value projections. If you want to plan out the work, you can optionally generate a phased renovation timeline to sequence projects, budget by phase, and estimate total project duration.',
+  },
+  {
+    q: 'Is my property data private?',
+    a: 'Yes. Your analyses are private to your account by default. We do not share or sell your data.',
+  },
+  {
+    q: 'What properties does FlipVision AI support?',
+    a: 'FlipVision AI currently supports residential properties in the United States, including single-family homes, multi-family units, and short-term rentals.',
+  },
+  {
+    q: 'Can I cancel my plan at any time?',
+    a: 'Yes — no long-term contracts. Upgrade, downgrade, or cancel anytime from your account settings.',
+  },
+]
+
+function FaqItem({ q, a }: { q: string; a: string }) {
+  // Pure CSS accordion using details/summary — no client JS needed
+  return (
+    <details className="group border-b border-white/8 last:border-0">
+      <summary className="flex items-center justify-between gap-4 py-5 cursor-pointer list-none select-none">
+        <span className="text-sm font-medium text-white/90 group-open:text-white transition-colors">{q}</span>
+        <span className="w-5 h-5 rounded-full border border-white/20 flex items-center justify-center shrink-0
+          text-white/40 group-open:text-white group-open:border-white/40 group-open:rotate-45 transition-all duration-200">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+            <path d="M5 1v8M1 5h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+          </svg>
+        </span>
+      </summary>
+      <p className="pb-5 text-sm text-white/50 leading-relaxed">{a}</p>
+    </details>
+  )
+}
+
+function FAQ() {
+  return (
+    <section id="faq" aria-label="Frequently asked questions" className={`${sans} bg-[#0b0e1a] py-24 px-6 border-t border-white/5`}>
+      <div className="max-w-2xl mx-auto">
+        <div className="text-center mb-14">
+          <p className="text-xs font-semibold text-blue-400 uppercase tracking-widest mb-3">FAQ</p>
+          <h2 className={`${serif} text-4xl sm:text-5xl text-white mb-4`}>
+            Questions? We have <em className="text-[#c9a84c] not-italic">answers</em>
+          </h2>
+          <p className="text-white/50">
+            Everything you need to know before your first analysis.
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-6 divide-y divide-white/0">
+          {FAQ_ITEMS.map((item) => (
+            <FaqItem key={item.q} q={item.q} a={item.a} />
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 // ─── Final CTA ───────────────────────────────────────────────────────────────
 function FinalCTA() {
   return (
@@ -681,6 +763,7 @@ export default function LandingPage() {
         <ProductPreview />
         <Benefits />
         <Pricing />
+        <FAQ />
         <FinalCTA />
       </main>
       <Footer />
