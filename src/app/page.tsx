@@ -10,6 +10,7 @@ import {
   BarChart3,
   Check,
   Star,
+  Building2,
 } from 'lucide-react'
 import { PLANS } from '@/lib/plans'
 
@@ -24,11 +25,8 @@ function Nav() {
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
-          <div className="relative w-7 h-7">
-            <div className="absolute inset-0 rounded-lg bg-blue-500 blur-sm opacity-60" />
-            <div className="relative w-7 h-7 rounded-lg bg-[#1a4fff] flex items-center justify-center">
-              <span className="text-white text-xs font-black">F</span>
-            </div>
+          <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
+            <Building2 className="w-4 h-4 text-white" />
           </div>
           <span className="text-white font-semibold tracking-tight text-sm">FlipVision AI</span>
         </Link>
@@ -528,8 +526,8 @@ function Footer() {
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-4" aria-label="FlipVision AI home">
-              <div className="w-7 h-7 rounded-lg bg-[#1a4fff] flex items-center justify-center">
-                <span className="text-white text-xs font-black" aria-hidden="true">F</span>
+              <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
+                <Building2 className="w-4 h-4 text-white" />
               </div>
               <span className="text-white font-semibold text-sm">FlipVision AI</span>
             </Link>
