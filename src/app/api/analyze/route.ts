@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI, Part } from '@google/generative-ai'
 import { createClient } from '@/lib/supabase/server'
 import { RoomType, ROOM_TYPE_LABELS, AnalysisReport, RenovationStyle } from '@/lib/types'
-import { PLANS, type PlanId } from '@/lib/plans'
+import { type PlanId } from '@/lib/plans'
+import { checkLimit, incrementLimit } from '@/lib/user-limits'
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
 
@@ -79,27 +80,11 @@ export async function POST(req: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    const planId   = (profile?.selected_plan ?? 'free') as PlanId
-    const planInfo = PLANS.find((p) => p.id === planId)
-    const limit    = planInfo?.report_limit ?? null
-
-    if (limit !== null) {
-      const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
-
-      const { count } = await supabase
-        .from('reports')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .gte('created_at', startOfMonth)
-
-      if ((count ?? 0) >= limit) {
-        return NextResponse.json(
-          { error: `You have reached your ${limit} analysis limit for this month. Upgrade to Pro for unlimited analyses.`, code: 'LIMIT_REACHED' },
-          { status: 403 }
-        )
-      }
+    const planId     = (profile?.selected_plan ?? 'free') as PlanId
+    const limitCheck = await checkLimit(user.id, planId, 'renovation_analysis')
+    if (!limitCheck.allowed) {
+      return NextResponse.json({ error: limitCheck.message, code: 'LIMIT_REACHED' }, { status: 403 })
     }
-    // ─────────────────────────────────────────────────────────────────────────
 
     // Fetch timeline prompt if requested
     let timelineContent = ''
@@ -156,6 +141,8 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (insertError) throw insertError
+
+    await incrementLimit(user.id, 'renovation_analysis')
 
     return NextResponse.json({ report: analysisReport, reportId: saved.id, generatedImageUrl: null })
   } catch (err: unknown) {

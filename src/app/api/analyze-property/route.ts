@@ -5,7 +5,8 @@ import { scrapeListingUrl } from '@/services/scraper.service'
 import { enrichPropertyData } from '@/services/enrichment.service'
 import { analyzeProperty } from '@/services/analysis.service'
 import { PropertyAnalysisRow } from '@/lib/property-analysis-types'
-import { PLANS, type PlanId } from '@/lib/plans'
+import { type PlanId } from '@/lib/plans'
+import { checkLimit, incrementLimit } from '@/lib/user-limits'
 
 // Cache TTL in hours (default 24)
 const CACHE_TTL_HOURS = parseInt(process.env.CACHE_TTL_HOURS ?? '24', 10)
@@ -56,27 +57,10 @@ export async function POST(req: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    const planId = (profile?.selected_plan ?? 'free') as PlanId
-    const planInfo = PLANS.find((p) => p.id === planId)
-    const limit = planInfo?.property_analysis_limit ?? null
-
-    if (limit !== null) {
-      const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
-      const { count } = await supabase
-        .from('property_analyses')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .gte('created_at', startOfMonth)
-
-      if ((count ?? 0) >= limit) {
-        return NextResponse.json(
-          {
-            error: `You have reached your ${limit} property analysis limit for this month. Upgrade to Pro for unlimited analyses.`,
-            code: 'LIMIT_REACHED',
-          },
-          { status: 403 }
-        )
-      }
+    const planId     = (profile?.selected_plan ?? 'free') as PlanId
+    const limitCheck = await checkLimit(user.id, planId, 'property_analysis')
+    if (!limitCheck.allowed) {
+      return NextResponse.json({ error: limitCheck.message, code: 'LIMIT_REACHED' }, { status: 403 })
     }
 
     // 5. Scrape the listing
@@ -126,6 +110,8 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (insertError) throw insertError
+
+    await incrementLimit(user.id, 'property_analysis')
 
     return NextResponse.json({
       report,
