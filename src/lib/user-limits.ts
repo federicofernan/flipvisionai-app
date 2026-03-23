@@ -20,10 +20,9 @@ export interface LimitCheckResult {
   message?: string
 }
 
-/** Returns the first moment of next month (= end of current billing period). */
-function endOfCurrentMonth(): string {
-  const now = new Date()
-  return new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0, 0).toISOString()
+/** Returns a timestamp 30 days from now (rolling billing period). */
+function thirtyDaysFromNow(): string {
+  return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
 }
 
 /**
@@ -40,7 +39,7 @@ async function ensureRow(
   const planInfo      = PLANS.find((p) => p.id === planId)
   const renovLimit    = planInfo?.report_limit            ?? null
   const propertyLimit = planInfo?.property_analysis_limit ?? null
-  const expiry        = endOfCurrentMonth()
+  const expiry        = thirtyDaysFromNow()
 
   // ── Fetch existing row ──────────────────────────────────────────────────
   const { data: existing } = await supabase
