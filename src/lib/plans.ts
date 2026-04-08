@@ -25,7 +25,7 @@ export const PLANS: Plan[] = [
       '2 property analyses per month',
       'Room-by-room breakdown',
       'Basic renovation suggestions',
-      'Cost & value estimates',
+      'Cost, value estimates & timeline',
     ],
     cta: 'Get Started Free',
     highlighted: false,

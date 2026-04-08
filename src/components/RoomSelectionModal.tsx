@@ -12,12 +12,15 @@ interface RoomSelectionModalProps {
 }
 
 const ROOM_ICONS: Record<RoomType, string> = {
-  kitchen:     '🍳',
-  bathroom:    '🚿',
-  living_room: '🛋️',
-  bedroom:     '🛏️',
-  exterior:    '🏠',
-  other:       '📷',
+  kitchen:         '🍳',
+  half_bathroom:   '🚽',
+  full_bathroom:   '🚿',
+  master_bathroom: '🛁',
+  living_room:     '🛋️',
+  bedroom:         '🛏️',
+  exterior:        '🏠',
+  backyard:        '🌿',
+  other:           '📷',
 }
 
 const STYLE_ICONS: Record<string, string> = {

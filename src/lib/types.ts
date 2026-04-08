@@ -1,9 +1,12 @@
 export type RoomType =
   | 'kitchen'
-  | 'bathroom'
+  | 'half_bathroom'
+  | 'full_bathroom'
+  | 'master_bathroom'
   | 'living_room'
   | 'bedroom'
   | 'exterior'
+  | 'backyard'
   | 'other'
 
 export interface Property {
@@ -26,20 +29,26 @@ export interface PropertyPhoto {
 }
 
 export const ROOM_TYPE_LABELS: Record<RoomType, string> = {
-  kitchen: 'Kitchen',
-  bathroom: 'Bathroom',
-  living_room: 'Living Room',
-  bedroom: 'Bedroom',
-  exterior: 'Exterior',
-  other: 'Other',
+  kitchen:         'Kitchen',
+  half_bathroom:   'Half Bathroom',
+  full_bathroom:   'Full Bathroom',
+  master_bathroom: 'Master Bathroom',
+  living_room:     'Living Room',
+  bedroom:         'Bedroom',
+  exterior:        'Exterior',
+  backyard:        'Backyard',
+  other:           'Other',
 }
 
 export const ROOM_TYPES: RoomType[] = [
   'kitchen',
-  'bathroom',
+  'half_bathroom',
+  'full_bathroom',
+  'master_bathroom',
   'living_room',
   'bedroom',
   'exterior',
+  'backyard',
   'other',
 ]
 
